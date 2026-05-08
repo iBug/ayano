@@ -20,6 +20,7 @@ type Filter struct {
 	TimeTo      time.Time
 	Threshold   util.SizeFlag
 	Server      string
+	Scheme      string
 }
 
 var timeFormats = []string{
@@ -45,10 +46,11 @@ func (f *Filter) InstallFlags(flags *pflag.FlagSet) {
 	flags.TimeVar(&f.TimeTo, "time-to", f.TimeTo, timeFormats, "End time to filter (inclusive). Default value (zero) means no limit")
 	flags.VarP(&f.Threshold, "threshold", "t", "Threshold size for request (only requests at least this large will be counted)")
 	flags.StringVarP(&f.Server, "server", "s", f.Server, "Server IP to filter (nginx-json only)")
+	flags.StringVar(&f.Scheme, "scheme", f.Scheme, "Scheme to filter (http or https)")
 }
 
 func (f *Filter) IsEmpty() bool {
-	return len(f.Prefixes) == 0 && len(f.UrlContains) == 0 && len(f.UAContains) == 0 && f.TimeFrom.IsZero() && f.TimeTo.IsZero() && f.Threshold == 0 && f.Server == ""
+	return len(f.Prefixes) == 0 && len(f.UrlContains) == 0 && len(f.UAContains) == 0 && f.TimeFrom.IsZero() && f.TimeTo.IsZero() && f.Threshold == 0 && f.Server == "" && f.Scheme == ""
 }
 
 var (
@@ -59,6 +61,7 @@ var (
 	ErrTimeNoMatch   = errors.New("time does not match")
 	ErrSizeTooSmall  = errors.New("size below threshold")
 	ErrServerNoMatch = errors.New("server does not match")
+	ErrSchemeNoMatch = errors.New("scheme does not match")
 )
 
 func (f *Filter) Match(item parser.LogItem) error {
@@ -120,6 +123,11 @@ func (f *Filter) Match(item parser.LogItem) error {
 	if f.Server != "" {
 		if item.Server != f.Server {
 			return ErrServerNoMatch
+		}
+	}
+	if f.Scheme != "" {
+		if item.Scheme != f.Scheme {
+			return ErrSchemeNoMatch
 		}
 	}
 	return nil

@@ -3,15 +3,18 @@ package analyze
 import (
 	"fmt"
 	"slices"
+
+	"github.com/samber/lo"
 )
 
 type SortByFlag string
 
 const (
-	SortBySize       SortByFlag = "size"
-	SortByRequests   SortByFlag = "requests"
-	SortByDirectory  SortByFlag = "directory"
-	SortByUserAgents SortByFlag = "user-agents"
+	SortBySize        SortByFlag = "size"
+	SortByRequests    SortByFlag = "requests"
+	SortByDirectory   SortByFlag = "directory"
+	SortByUserAgents  SortByFlag = "user-agents"
+	SortByConnections SortByFlag = "connections"
 )
 
 func (s SortByFlag) String() string {
@@ -28,6 +31,8 @@ func (s *SortByFlag) Set(value string) error {
 		*s = SortByDirectory
 	case string(SortByUserAgents), "ua", "uas":
 		*s = SortByUserAgents
+	case string(SortByConnections), "conns", "conn":
+		*s = SortByConnections
 	default:
 		return fmt.Errorf("must be one of: %v", ListSortFuncs())
 	}
@@ -56,6 +61,11 @@ var sortFuncs = map[SortByFlag]func(a map[StatKey]IPStats) SortFunc{
 			return len(i[r].UAStore) - len(i[l].UAStore)
 		}
 	},
+	SortByConnections: func(i map[StatKey]IPStats) SortFunc {
+		return func(l, r StatKey) int {
+			return int(i[r].Connections - i[l].Connections)
+		}
+	},
 }
 
 func GetSortFunc(name SortByFlag, i map[StatKey]IPStats) SortFunc {
@@ -67,10 +77,7 @@ func GetSortFunc(name SortByFlag, i map[StatKey]IPStats) SortFunc {
 }
 
 func ListSortFuncs() []SortByFlag {
-	ret := make([]SortByFlag, 0, len(sortFuncs))
-	for key := range sortFuncs {
-		ret = append(ret, key)
-	}
+	ret := lo.Keys(sortFuncs)
 	slices.Sort(ret)
 	return ret
 }

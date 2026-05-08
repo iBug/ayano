@@ -10,6 +10,7 @@ type LogItem struct {
 	Time      time.Time
 	URL       string
 	Server    string
+	Scheme    string
 	Useragent string
 
 	// Parsers wishing to discard this log item can set Discard to true.

@@ -49,6 +49,8 @@ type IPStats struct {
 	Requests uint64
 	LastURL  string
 
+	Connections uint64
+
 	// Directory statistics
 	DirStats map[string]*DirectoryStats
 
@@ -107,6 +109,7 @@ func (i IPStats) UpdateWith(item parser.LogItem, dirStats bool) IPStats {
 func (i IPStats) MergeWith(other IPStats) IPStats {
 	i.Size += other.Size
 	i.Requests += other.Requests
+	i.Connections += other.Connections
 	if i.LastURL == other.LastURL {
 		if other.LastURLAccess.After(i.LastURLAccess) {
 			i.LastURLAccess = other.LastURLAccess
@@ -448,30 +451,22 @@ func filterSockTabEntry(s *netstat.SockTabEntry) bool {
 }
 
 func (a *Analyzer) GetActiveConns(activeConn map[netip.Prefix]int) {
-	// Get active connections
-	tabs, err := netstat.TCPSocks(filterSockTabEntry)
+	tabs4, err := netstat.TCPSocks(filterSockTabEntry)
 	if err != nil {
-		a.logger.Printf("netstat error: %v", err)
-	} else {
-		for _, tab := range tabs {
-			ip, ok := netip.AddrFromSlice(tab.RemoteAddr.IP)
-			if !ok {
-				continue
-			}
-			activeConn[a.IPPrefix(ip)] += 1
-		}
+		a.logger.Printf("netstat IPv4 error: %v", err)
 	}
-	tabs, err = netstat.TCP6Socks(filterSockTabEntry)
+	tabs6, err := netstat.TCP6Socks(filterSockTabEntry)
 	if err != nil {
-		a.logger.Printf("netstat error: %v", err)
-	} else {
-		for _, tab := range tabs {
-			ip, ok := netip.AddrFromSlice(tab.RemoteAddr.IP)
-			if !ok {
-				continue
-			}
-			activeConn[a.IPPrefix(ip)] += 1
+		a.logger.Printf("netstat IPv6 error: %v", err)
+	}
+
+	tabs := append(tabs4, tabs6...)
+	for _, tab := range tabs {
+		ip, ok := netip.AddrFromSlice(tab.RemoteAddr.IP)
+		if !ok {
+			continue
 		}
+		activeConn[a.IPPrefix(ip)] += 1
 	}
 }
 
@@ -593,6 +588,13 @@ func (a *Analyzer) PrintTopValues(displayRecord map[netip.Prefix]time.Time, sort
 	activeConn := make(map[netip.Prefix]int)
 	if !a.Config.NoNetstat {
 		a.GetActiveConns(activeConn)
+		for key := range a.stats {
+			if conn, ok := activeConn[key.Prefix]; ok {
+				item := a.stats[key]
+				item.Connections = uint64(conn)
+				a.stats[key] = item
+			}
+		}
 	}
 
 	if a.Config.UseLock() {
@@ -778,8 +780,8 @@ func (a *Analyzer) PrintTopValues(displayRecord map[netip.Prefix]time.Time, sort
 		}
 
 		if !a.Config.NoNetstat {
-			if _, ok := activeConn[key.Prefix]; ok {
-				row[1] = strconv.Itoa(activeConn[key.Prefix])
+			if ipStats.Connections > 0 {
+				row[1] = strconv.FormatUint(ipStats.Connections, 10)
 			}
 		} else {
 			// Remove connections column
@@ -806,7 +808,7 @@ func (a *Analyzer) PrintTopValues(displayRecord map[netip.Prefix]time.Time, sort
 			humanize.IBytes(average), "", "", "", strconv.Itoa(agents),
 		}
 		if !a.Config.NoNetstat {
-			row[1] = strconv.FormatInt(int64(len(activeConn)), 10)
+			row[1] = strconv.Itoa(len(activeConn))
 		}
 		if err := table.Append(row); err != nil {
 			a.logger.Printf("failed to append total row: %v", err)

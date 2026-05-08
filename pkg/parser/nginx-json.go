@@ -30,6 +30,7 @@ type NginxJSONLog struct {
 	Url       string  `json:"url"`
 	Timestamp float64 `json:"timestamp"`
 	ServerIP  string  `json:"serverip"`
+	Scheme    string  `json:"scheme"`
 	Useragent string  `json:"user_agent"`
 }
 
@@ -47,6 +48,7 @@ func ParseNginxJSON(line []byte) (LogItem, error) {
 		Time:      t,
 		URL:       logItem.Url,
 		Server:    logItem.ServerIP,
+		Scheme:    logItem.Scheme,
 		Useragent: logItem.Useragent,
 	}, nil
 }
