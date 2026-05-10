@@ -588,6 +588,14 @@ func (a *Analyzer) PrintTopValues(displayRecord map[netip.Prefix]time.Time, sort
 	activeConn := make(map[netip.Prefix]int)
 	if !a.Config.NoNetstat {
 		a.GetActiveConns(activeConn)
+	}
+
+	if a.Config.UseLock() {
+		a.mu.Lock()
+		defer a.mu.Unlock()
+	}
+
+	if !a.Config.NoNetstat {
 		for key := range a.stats {
 			if conn, ok := activeConn[key.Prefix]; ok {
 				item := a.stats[key]
@@ -595,11 +603,6 @@ func (a *Analyzer) PrintTopValues(displayRecord map[netip.Prefix]time.Time, sort
 				a.stats[key] = item
 			}
 		}
-	}
-
-	if a.Config.UseLock() {
-		a.mu.Lock()
-		defer a.mu.Unlock()
 	}
 
 	keys := a.SortedKeys(sortBy, serverFilter)
