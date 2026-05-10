@@ -182,7 +182,7 @@ func (c *AnalyzerConfig) InstallFlags(flags *pflag.FlagSet, cmdname string) {
 	flags.IntVar(&c.PrefixV6, "prefixv6", c.PrefixV6, "Group IPv6 by prefix")
 	flags.DurationVar(&c.RepeatWarn, "repeat-warn", c.RepeatWarn, "Highlight repeated URL visits longer than duration")
 	flags.IntVarP(&c.RefreshSec, "refresh", "r", c.RefreshSec, "Refresh interval in seconds")
-	flags.VarP(&c.SortBy, "sort-by", "S", "Sort result by (size|requests)")
+	flags.VarP(&c.SortBy, "sort-by", "S", "Sort result by (size|requests|dir|ua|conn)")
 	flags.IntVarP(&c.TopN, "top", "n", c.TopN, "Number of top items to show")
 	flags.BoolVar(&c.Total, "total", c.Total, "Show an additional \"Total\" row")
 	flags.BoolVar(&c.Truncate, "truncate", c.Truncate, "Truncate long URLs from output")

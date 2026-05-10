@@ -65,7 +65,7 @@ Flags:
       --prefixv6 int      Group IPv6 by prefix (default 48)
   -r, --refresh int       Refresh interval in seconds (default 5)
   -s, --server string     Server IP to filter (nginx-json only)
-  -S, --sort-by string    Sort result by (size|requests) (default "size")
+  -S, --sort-by string    Sort result by (size|requests|dir|ua|conn) (default "size")
   -t, --threshold size    Threshold size for request (only requests at least this large will be counted) (default 10 MB)
   -n, --top int           Number of top items to show (default 10)
       --truncate          Truncate long URLs from output
